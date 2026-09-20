@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIY Polaroid Maker</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --surface: #ffffff;
+    --surface-hover: #f0f0f2;
+    --border: #d1d1d6;
+    --text: #1c1c1e;
+    --text-secondary: #636366;
+    --text-muted: #8e8e93;
+    --accent: #007aff;
+    --danger: #ff3b30;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 24px 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; letter-spacing: -0.3px; }
+  .subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+
+  .controls-row {
+    display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 20px; padding: 12px 16px;
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .controls-row label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+  .border-options { display: flex; gap: 6px; }
+  .border-option {
+    padding: 6px 14px; border-radius: 6px; border: 1.5px solid var(--border);
+    background: var(--surface); font-size: 13px; cursor: pointer;
+    transition: all 0.15s ease; font-family: inherit;
+  }
+  .border-option:hover { border-color: var(--text-secondary); }
+  .border-option.active { border-color: var(--text); background: var(--text); color: #fff; }
+
+  .upload-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+
+  .upload-slot {
+    background: var(--surface); border: 1.5px dashed var(--border); border-radius: var(--radius);
+    padding: 12px; text-align: center; cursor: pointer; transition: all 0.15s ease;
+    min-height: 160px; display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-start; position: relative; overflow: hidden; box-shadow: var(--shadow);
+  }
+  .upload-slot:hover { border-color: var(--text-secondary); background: var(--surface-hover); }
+  .upload-slot.has-image { border-style: solid; border-color: var(--border); padding: 8px; }
+  .upload-slot .slot-num { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .upload-slot .plus { font-size: 28px; color: var(--text-muted); font-weight: 300; line-height: 1; margin-top: 20px; }
+
+  .photo-area {
+    width: 100%; height: 90px;
+    background: #f2f2f7; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .photo-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2; }
+
+  .edit-btn {
+    position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.6);
+    color: #fff; border: none; border-radius: 4px; padding: 2px 8px;
+    font-size: 11px; cursor: pointer; z-index: 3; display: none; font-family: inherit;
+  }
+  .photo-area:hover .edit-btn { display: block; }
+
+  .move-btns { display: flex; gap: 4px; margin-bottom: 6px; z-index: 4; }
+  .move-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 2px 8px; font-size: 12px; cursor: pointer; color: var(--text-secondary); font-family: inherit;
+  }
+  .move-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .move-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .remove-btn {
+    position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
+    border-radius: 50%; background: var(--danger); color: #fff; border: none;
+    font-size: 14px; line-height: 1; cursor: pointer; display: none;
+    align-items: center; justify-content: center; z-index: 5;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .upload-slot.has-image:hover .remove-btn { display: flex; }
+
+  .caption-input {
+    width: 100%; border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 8px; font-size: 12px; background: var(--surface); color: var(--text);
+    resize: none; height: 44px; line-height: 1.35; font-family: inherit;
+    z-index: 4; position: relative;
+  }
+  .caption-input::placeholder { color: var(--text-muted); }
+  .caption-input:focus { outline: none; border-color: var(--accent); }
+
+  .actions { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 24px; border-radius: var(--radius); border: none;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease; font-family: inherit;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--text); color: #fff; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .btn-secondary:hover { background: var(--surface-hover); }
+
+  .preview-wrap {
+    background: var(--surface); border-radius: 12px; padding: 16px;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+  }
+  .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .preview-header span { font-size: 13px; font-weight: 500; }
+  .preview-header .hint { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+
+  /* ===== SHEET ===== */
+  .polaroid-sheet {
+    display: flex; flex-wrap: wrap;
+    width: 100%; aspect-ratio: 297 / 210;
+    background: #fff; position: relative;
+    border: 0.5px solid #e0e0e0;
+  }
+
+  .polaroid {
+    background: #fff;
+    display: flex; flex-direction: column; align-items: center;
+    border: 0.5px solid #e8e8e8;
+    position: relative; overflow: hidden;
+    width: 25%; height: 50%;
+  }
+
+  .polaroid.thin   { padding: 0.8% 0.8% 2% !important; }
+  .polaroid.medium { padding: 1.5% 1.5% 3% !important; }
+  .polaroid.big    { padding: 2.5% 2.5% 4% !important; }
+
+  .polaroid-photo {
+    width: 100%; flex: 1;
+    background: #f2f2f7;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; border-radius: 2px; position: relative;
+  }
+
+  .polaroid-photo img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center center;
+    max-width: none;
+    max-height: none;
+    pointer-events: none;
+    user-select: none;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    will-change: transform;
+  }
+
+  .polaroid-photo .placeholder-num { color: #c7c7cc; font-size: 22px; font-weight: 600; }
+
+  .polaroid-caption {
+    font-size: 11px; color: #1c1c1e; text-align: center;
+    line-height: 1.35; min-height: 8%;
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; word-break: break-word; padding: 0 2px;
+  }
+
+  .polaroid.thin .polaroid-caption   { margin-top: 0.8% !important; }
+  .polaroid.medium .polaroid-caption { margin-top: 1.5% !important; }
+  .polaroid.big .polaroid-caption    { margin-top: 2.5% !important; }
+
+  .cut-line-h {
+    position: absolute; left: 0; right: 0; height: 0;
+    border-top: 1px dashed #bbb; z-index: 10;
+  }
+  .cut-line-v {
+    position: absolute; top: 0; bottom: 0; width: 0;
+    border-left: 1px dashed #bbb; z-index: 10;
+  }
+
+  .footer-hint { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ===== FILTERS ===== */
+  .filter-options { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-btn {
+    flex: 1; min-width: 70px; padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--border);
+    background: var(--surface); font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s ease; color: var(--text-secondary);
+  }
+  .filter-btn:hover { border-color: var(--text); color: var(--text); }
+  .filter-btn.active { border-color: var(--text); background: var(--text); color: #fff; }
+
+  .effect-toggles { display: flex; gap: 8px; flex-wrap: wrap; }
+  .effect-toggle {
+    flex: 1; min-width: 90px; padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--border);
+    background: var(--surface); font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s ease; color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .effect-toggle:hover { border-color: var(--text); color: var(--text); }
+  .effect-toggle.active { border-color: var(--accent); background: rgba(0,122,255,0.08); color: var(--accent); }
+
+  /* Grain: tiled fractal-noise SVG data-URI, blended over the photo */
+  .fx-grain {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-size: 160px 160px;
+    mix-blend-mode: overlay;
+    opacity: 0.35;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
+  }
+
+  /* Light leak: warm gradient bleeding in from a corner, screen-blended */
+  .fx-lightleak {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 65% 55% at 12% 15%, rgba(255,200,90,0.75), rgba(255,140,60,0.35) 40%, transparent 65%),
+      linear-gradient(135deg, rgba(255,210,140,0.3), transparent 55%);
+    mix-blend-mode: screen;
+    opacity: 0.9;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
+  }
+
+  .polaroid-photo img { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+    overflow-y: auto;
+  }
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: var(--surface); border-radius: 16px; padding: 24px;
+    width: 100%; max-width: 640px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+    margin: auto;
+  }
+
+  .modal-close-btn {
+    position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
+    border-radius: 50%; background: var(--surface-hover); border: none;
+    font-size: 18px; color: var(--text); cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .modal-close-btn:hover { background: var(--border); }
+
+  .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+
+  .modal-section { margin-bottom: 24px; }
+  .modal-section-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 12px; }
+
+  .crop-preview {
+    width: 100%; aspect-ratio: 3 / 4; background: #f2f2f7;
+    border-radius: 8px; overflow: hidden; position: relative;
+    border: 1px solid var(--border); margin-bottom: 12px;
+  }
+
+  .modal-image-layer {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: grab;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  .modal-image-layer img {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .slider-group {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .slider-group label { font-size: 12px; min-width: 50px; color: var(--text-secondary); }
+  .slider-group input[type="range"] { flex: 1; }
+  .slider-group .value { font-size: 12px; font-weight: 500; min-width: 40px; text-align: right; color: var(--text); }
+
+  .modal-actions {
+    display: flex; gap: 12px;
+  }
+  .modal-actions button { flex: 1; }
+
+  /* ===== PRINT STYLES ===== */
+  @media print {
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+
+    * { margin: 0 !important; padding: 0 !important; }
+    
+    body {
+      background: #fff !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      max-width: none !important;
+      width: 100% !important;
+    }
+
+    .controls-row, .upload-grid, .actions, .preview-header, .footer-hint, h1, .subtitle {
+      display: none !important;
+    }
+
+    .preview-wrap {
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: #fff !important;
+    }
+
+    .polaroid-sheet {
+      width: 297mm !important; 
+      height: 210mm !important;
+      max-width: none !important;
+      max-height: none !important;
+      aspect-ratio: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      page-break-after: avoid;
+      box-shadow: none !important;
+    }
+
+    .polaroid {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .polaroid-photo img {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .cut-line-h, .cut-line-v {
+      opacity: 1 !important;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+  }
+</style>
+</head>
+
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="chromaticAberration" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+        <feOffset in="r" dx="2.5" dy="0" result="r-off"/>
+        <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+        <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+        <feOffset in="b" dx="-2.5" dy="0" result="b-off"/>
+        <feBlend in="r-off" in2="g" mode="screen" result="rg"/>
+        <feBlend in="rg" in2="b-off" mode="screen"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <h1>DIY Polaroid Maker</h1>
+  <p class="subtitle">Upload photos, frame them, apply filters, and print 8 polaroids on A4 paper!</p>
+
+  <div class="controls-row">
+    <label>White border size:</label>
+    <div class="border-options" id="borderOptions"></div>
+  </div>
+
+  <div class="upload-grid" id="uploadGrid"></div>
+
+  <div class="actions">
+    <button class="btn btn-primary" onclick="javascript:window.print()">🖨️ Print Sheet</button>
+    <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="preview-header">
+      <span>📋 Preview</span>
+      <span class="hint">This is how your A4 sheet will look when printed and cut</span>
+    </div>
+    <div class="polaroid-sheet" id="polaroidSheet"></div>
+  </div>
+
+  <p class="footer-hint">💡 <strong>Tips:</strong> Click "Frame" to adjust crop, apply filters, and position. Use arrow buttons to reorder. The dashed lines show where to cut. Print at 100% scale (no scaling) with Margins set to "None" on A4 paper.</p>
+
+  <!-- ===== MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <button class="modal-close-btn" onclick="closeModal()">×</button>
+      <div class="modal-title">Frame Photo</div>
+
+      <div class="modal-section">
+        <div class="crop-preview">
+          <div class="modal-image-layer" id="modalImageLayer">
+            <img id="cropImg" src="" alt="">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Style</div>
+        <div class="filter-options" id="filterOptions">
+          <button class="filter-btn active" data-filter="none">Normal</button>
+          <button class="filter-btn" data-filter="vintage">Vintage</button>
+          <button class="filter-btn" data-filter="fade">Faded</button>
+          <button class="filter-btn" data-filter="mono">B&amp;W</button>
+          <button class="filter-btn" data-filter="warm">Warm</button>
+          <button class="filter-btn" data-filter="huji">Huji</button>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Effects</div>
+        <div class="effect-toggles" id="effectToggles">
+          <button class="effect-toggle" data-effect="grain">🎞️ Grain</button>
+          <button class="effect-toggle" data-effect="lightLeak">✨ Light Leak</button>
+          <button class="effect-toggle" data-effect="aberration">🌈 Aberration</button>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Zoom</div>
+        <div class="slider-group">
+          <input type="range" id="zoomSlider" min="0.3" max="3" step="0.05" value="1">
+          <span class="value" id="zoomVal">1.00×</span>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Pan Horizontal</div>
+        <div class="slider-group">
+          <input type="range" id="panXSlider" min="-100" max="100" step="1" value="0">
+          <span class="value" id="panXVal">0</span>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Pan Vertical</div>
+        <div class="slider-group">
+          <input type="range" id="panYSlider" min="-100" max="100" step="1" value="0">
+          <span class="value" id="panYVal">0</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="saveCrop()">Apply</button>
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let slots = Array(8).fill().map(() => ({ src: null, caption: '', zoom: 1, panX: 0, panY: 0, filterPreset: 'none', effects: { grain: false, lightLeak: false, aberration: false } }));
+  let borderSize = 'medium';
+  let editingIndex = -1;
+  let isDragging = false;
+  let dragStart = { x: 0, y: 0 };
+  let dragOffset = { x: 0, y: 0 };
+  let currentModalPreset = 'none';
+  let currentModalEffects = { grain: false, lightLeak: false, aberration: false };
+
+  const FILTER_PRESETS = {
+    none:    '',
+    vintage: 'sepia(35%) contrast(112%) brightness(105%) saturate(115%)',
+    fade:    'sepia(15%) contrast(88%) brightness(112%) saturate(75%)',
+    mono:    'grayscale(100%) contrast(115%)',
+    warm:    'sepia(20%) saturate(140%) hue-rotate(-8deg) contrast(95%) brightness(108%)',
+    huji:    'sepia(25%) saturate(160%) hue-rotate(-15deg) contrast(105%) brightness(103%)'
+  };
+
+  function buildImgFilterCSS(presetKey, aberrationOn) {
+    const parts = [];
+    if (aberrationOn) parts.push('url(#chromaticAberration)');
+    if (FILTER_PRESETS[presetKey]) parts.push(FILTER_PRESETS[presetKey]);
+    return parts.join(' ');
+  }
+
+  // Adds grain/light-leak overlay divs into a photo container (must be
+  // position:relative) based on an effects object. Call after the <img> is
+  // already appended so overlays paint on top.
+  function applyEffectOverlays(container, effects) {
+    container.querySelectorAll('.fx-grain, .fx-lightleak').forEach(el => el.remove());
+    if (effects && effects.grain) {
+      const g = document.createElement('div');
+      g.className = 'fx-grain';
+      container.appendChild(g);
+    }
+    if (effects && effects.lightLeak) {
+      const l = document.createElement('div');
+      l.className = 'fx-lightleak';
+      container.appendChild(l);
+    }
+  }
+
+  const borderOptions = document.getElementById('borderOptions');
+  const uploadGrid = document.getElementById('uploadGrid');
+  const sheet = document.getElementById('polaroidSheet');
+  const modal = document.getElementById('modalOverlay');
+  const cropImg = document.getElementById('cropImg');
+  const zoomSlider = document.getElementById('zoomSlider');
+  const panXSlider = document.getElementById('panXSlider');
+  const panYSlider = document.getElementById('panYSlider');
+  const modalImageLayer = document.getElementById('modalImageLayer');
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const effectToggleBtns = document.querySelectorAll('.effect-toggle');
+
+  ['thin', 'medium', 'big'].forEach(size => {
+    const btn = document.createElement('button');
+    btn.className = 'border-option' + (size === 'medium' ? ' active' : '');
+    btn.textContent = size.charAt(0).toUpperCase() + size.slice(1);
+    btn.onclick = () => {
+      document.querySelectorAll('.border-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      borderSize = size;
+      renderSheet();
+    };
+    borderOptions.appendChild(btn);
+  });
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentModalPreset = btn.getAttribute('data-filter');
+      cropImg.style.filter = buildImgFilterCSS(currentModalPreset, currentModalEffects.aberration);
+    });
+  });
+
+  effectToggleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-effect');
+      currentModalEffects[key] = !currentModalEffects[key];
+      btn.classList.toggle('active', currentModalEffects[key]);
+      cropImg.style.filter = buildImgFilterCSS(currentModalPreset, currentModalEffects.aberration);
+      applyEffectOverlays(modalImageLayer, currentModalEffects);
+    });
+  });
+
+  function renderUploadGrid() {
+    uploadGrid.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'upload-slot' + (slots[i].src ? ' has-image' : '');
+      uploadGrid.appendChild(slot);
+
+      const slotNum = document.createElement('div');
+      slotNum.className = 'slot-num';
+      slotNum.textContent = 'Photo ' + (i + 1);
+      slot.appendChild(slotNum);
+
+      const moveBtns = document.createElement('div');
+      moveBtns.className = 'move-btns';
+
+      const leftBtn = document.createElement('button');
+      leftBtn.className = 'move-btn';
+      leftBtn.textContent = '◀';
+      leftBtn.disabled = i === 0;
+      leftBtn.onclick = (e) => { e.stopPropagation(); swapSlots(i, i - 1); };
+      moveBtns.appendChild(leftBtn);
+
+      const rightBtn = document.createElement('button');
+      rightBtn.className = 'move-btn';
+      rightBtn.textContent = '▶';
+      rightBtn.disabled = i === 7;
+      rightBtn.onclick = (e) => { e.stopPropagation(); swapSlots(i, i + 1); };
+      moveBtns.appendChild(rightBtn);
+
+      slot.appendChild(moveBtns);
+
+      const photoArea = document.createElement('div');
+      photoArea.className = 'photo-area';
+      let thumbImg = null;
+
+      if (slots[i].src) {
+        thumbImg = document.createElement('img');
+        thumbImg.src = slots[i].src;
+        thumbImg.alt = 'Photo ' + (i + 1);
+        thumbImg.style.filter = buildImgFilterCSS(slots[i].filterPreset, slots[i].effects && slots[i].effects.aberration);
+        photoArea.appendChild(thumbImg);
+        applyEffectOverlays(photoArea, slots[i].effects);
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = 'Frame';
+        editBtn.onclick = (e) => { e.stopPropagation(); openModal(i); };
+        photoArea.appendChild(editBtn);
+
+        const remove = document.createElement('button');
+        remove.className = 'remove-btn';
+        remove.innerHTML = '×';
+        remove.title = 'Remove';
+        remove.onclick = (e) => { e.stopPropagation(); removeImage(i); };
+        slot.appendChild(remove);
+      } else {
+        const plus = document.createElement('div');
+        plus.className = 'plus';
+        plus.textContent = '+';
+        photoArea.appendChild(plus);
+      }
+
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.onchange = (e) => handleFile(e, i);
+      photoArea.appendChild(fileInput);
+
+      slot.appendChild(photoArea);
+
+      if (thumbImg) {
+        applyImageFrame(thumbImg, photoArea, slots[i].natW, slots[i].natH, slots[i].zoom, slots[i].panX, slots[i].panY, false);
+      }
+
+      const cap = document.createElement('textarea');
+      cap.className = 'caption-input';
+      cap.placeholder = 'Caption...';
+      cap.value = slots[i].caption;
+      cap.oninput = (e) => { slots[i].caption = e.target.value; renderSheet(); };
+      slot.appendChild(cap);
+    }
+  }
+
+  function handleFile(e, index) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      const probe = new Image();
+      probe.onload = () => {
+        slots[index].src = dataUrl;
+        slots[index].natW = probe.naturalWidth;
+        slots[index].natH = probe.naturalHeight;
+        slots[index].zoom = 1;
+        slots[index].panX = 0;
+        slots[index].panY = 0;
+        slots[index].filterPreset = 'none';
+        slots[index].effects = { grain: false, lightLeak: false, aberration: false };
+        renderUploadGrid();
+        renderSheet();
+      };
+      probe.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage(index) {
+    slots[index] = { src: null, caption: '', zoom: 1, panX: 0, panY: 0, filterPreset: 'none', effects: { grain: false, lightLeak: false, aberration: false } };
+    renderUploadGrid();
+    renderSheet();
+  }
+
+  function swapSlots(a, b) {
+    if (a < 0 || a > 7 || b < 0 || b > 7) return;
+    const temp = slots[a];
+    slots[a] = slots[b];
+    slots[b] = temp;
+    renderUploadGrid();
+    renderSheet();
+  }
+
+  function getCoverScale(boxW, boxH, natW, natH) {
+    return Math.max(boxW / natW, boxH / natH);
+  }
+
+  function getMaxOffsets(natW, natH, boxW, boxH, zoom) {
+    const scale = getCoverScale(boxW, boxH, natW, natH) * zoom;
+    const renderW = natW * scale;
+    const renderH = natH * scale;
+    return {
+      maxOffX: Math.max(0, (renderW - boxW) / 2),
+      maxOffY: Math.max(0, (renderH - boxH) / 2)
+    };
+  }
+
+  function computeFrame(boxW, boxH, natW, natH, zoom, panX, panY) {
+    const scale = getCoverScale(boxW, boxH, natW, natH) * zoom;
+    const renderW = natW * scale;
+    const renderH = natH * scale;
+    const maxOffX = Math.max(0, (renderW - boxW) / 2);
+    const maxOffY = Math.max(0, (renderH - boxH) / 2);
+    const offX = (panX / 100) * maxOffX;
+    const offY = (panY / 100) * maxOffY;
+    return {
+      w: renderW,
+      h: renderH,
+      left: (boxW - renderW) / 2 + offX,
+      top: (boxH - renderH) / 2 + offY
+    };
+  }
+
+  function applyImageFrame(imgEl, boxEl, natW, natH, zoom, panX, panY, isRotated) {
+    const boxW = boxEl.clientWidth;
+    const boxH = boxEl.clientHeight;
+    if (!boxW || !boxH || !natW || !natH) return;
+    const f = computeFrame(boxW, boxH, natW, natH, zoom, panX, panY);
+    imgEl.style.position = 'absolute';
+    imgEl.style.width = (f.w / boxW * 100) + '%';
+    imgEl.style.height = (f.h / boxH * 100) + '%';
+    imgEl.style.left = (f.left / boxW * 100) + '%';
+    imgEl.style.top = (f.top / boxH * 100) + '%';
+    imgEl.style.transformOrigin = 'center center';
+    imgEl.style.transform = isRotated ? 'rotate(180deg)' : '';
+  }
+
+  function renderSheet() {
+    sheet.innerHTML = '';
+
+    const cutH = document.createElement('div');
+    cutH.className = 'cut-line-h';
+    cutH.style.top = '50%';
+    sheet.appendChild(cutH);
+
+    for (const pos of [25, 50, 75]) {
+      const cutV = document.createElement('div');
+      cutV.className = 'cut-line-v';
+      cutV.style.left = pos + '%';
+      sheet.appendChild(cutV);
+    }
+
+    for (let i = 0; i < 8; i++) {
+      const p = document.createElement('div');
+      p.className = 'polaroid ' + borderSize;
+
+      const photo = document.createElement('div');
+      photo.className = 'polaroid-photo';
+
+      if (slots[i].src) {
+        const img = document.createElement('img');
+        img.src = slots[i].src;
+        img.alt = '';
+        img.style.filter = buildImgFilterCSS(slots[i].filterPreset, slots[i].effects && slots[i].effects.aberration);
+        photo.appendChild(img);
+        applyEffectOverlays(photo, slots[i].effects);
+        p.appendChild(photo);
+
+        const cap = document.createElement('div');
+        cap.className = 'polaroid-caption';
+        cap.textContent = slots[i].caption || '';
+        p.appendChild(cap);
+
+        sheet.appendChild(p);
+        
+        applyImageFrame(img, photo, slots[i].natW, slots[i].natH, slots[i].zoom, slots[i].panX, slots[i].panY, false);
+        continue;
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'placeholder-num';
+        ph.textContent = (i + 1);
+        photo.appendChild(ph);
+      }
+
+      p.appendChild(photo);
+
+      const cap = document.createElement('div');
+      cap.className = 'polaroid-caption';
+      cap.textContent = slots[i].caption || '';
+      p.appendChild(cap);
+
+      sheet.appendChild(p);
+    }
+  }
+
+  function clearAll() {
+    for (let i = 0; i < 8; i++) {
+      slots[i] = { src: null, caption: '', zoom: 1, panX: 0, panY: 0, filterPreset: 'none', effects: { grain: false, lightLeak: false, aberration: false } };
+    }
+    renderUploadGrid();
+    renderSheet();
+  }
+
+  function openModal(index) {
+    editingIndex = index;
+    const s = slots[index];
+    cropImg.src = s.src;
+    zoomSlider.value = s.zoom;
+    panXSlider.value = s.panX;
+    panYSlider.value = s.panY;
+
+    currentModalPreset = s.filterPreset || 'none';
+    currentModalEffects = Object.assign({ grain: false, lightLeak: false, aberration: false }, s.effects);
+    cropImg.style.filter = buildImgFilterCSS(currentModalPreset, currentModalEffects.aberration);
+    applyEffectOverlays(modalImageLayer, currentModalEffects);
+
+    filterBtns.forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-filter') === currentModalPreset);
+    });
+    effectToggleBtns.forEach(b => {
+      b.classList.toggle('active', !!currentModalEffects[b.getAttribute('data-effect')]);
+    });
+
+    updateCropPreview();
+    modal.classList.add('active');
+  }
+
+  function closeModal() {
+    modal.classList.remove('active');
+    editingIndex = -1;
+  }
+
+  function saveCrop() {
+    if (editingIndex < 0) return;
+    slots[editingIndex].zoom = parseFloat(zoomSlider.value);
+    slots[editingIndex].panX = parseFloat(panXSlider.value);
+    slots[editingIndex].panY = parseFloat(panYSlider.value);
+    slots[editingIndex].filterPreset = currentModalPreset;
+    slots[editingIndex].effects = Object.assign({}, currentModalEffects);
+    renderUploadGrid();
+    renderSheet();
+    closeModal();
+  }
+
+  function updateCropPreview() {
+    const z = parseFloat(zoomSlider.value);
+    const px = parseFloat(panXSlider.value);
+    const py = parseFloat(panYSlider.value);
+    const s = slots[editingIndex];
+
+    if (s && s.natW && s.natH) {
+      applyImageFrame(cropImg, modalImageLayer, s.natW, s.natH, z, px, py, false);
+    }
+
+    document.getElementById('zoomVal').textContent = z.toFixed(2) + '×';
+    document.getElementById('panXVal').textContent = px.toFixed(1);
+    document.getElementById('panYVal').textContent = py.toFixed(1);
+  }
+
+  zoomSlider.addEventListener('input', updateCropPreview);
+  panXSlider.addEventListener('input', updateCropPreview);
+  panYSlider.addEventListener('input', updateCropPreview);
+
+  modalImageLayer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    dragStart = { x: e.clientX, y: e.clientY };
+    dragOffset = { x: parseFloat(panXSlider.value), y: parseFloat(panYSlider.value) };
+    modalImageLayer.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const s = slots[editingIndex];
+    if (!s || !s.natW || !s.natH) return;
+
+    const boxW = modalImageLayer.clientWidth;
+    const boxH = modalImageLayer.clientHeight;
+    const zoom = parseFloat(zoomSlider.value);
+    const { maxOffX, maxOffY } = getMaxOffsets(s.natW, s.natH, boxW, boxH, zoom);
+
+    const dxPx = e.clientX - dragStart.x;
+    const dyPx = e.clientY - dragStart.y;
+
+    const dxPct = maxOffX > 0 ? (dxPx / maxOffX) * 100 : 0;
+    const dyPct = maxOffY > 0 ? (dyPx / maxOffY) * 100 : 0;
+
+    panXSlider.value = Math.max(-100, Math.min(100, dragOffset.x + dxPct));
+    panYSlider.value = Math.max(-100, Math.min(100, dragOffset.y + dyPct));
+    updateCropPreview();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      modalImageLayer.style.cursor = 'grab';
+    }
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  window.addEventListener('beforeprint', renderSheet);
+
+  renderUploadGrid();
+  renderSheet();
+</script>
+
+</body>
+</html>

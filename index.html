@@ -49,7 +49,18 @@
   .border-option:hover { border-color: var(--text-secondary); }
   .border-option.active { border-color: var(--text); background: var(--text); color: #fff; }
 
-  .upload-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .upload-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .upload-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 
   .upload-slot {
     background: var(--surface); border: 1.5px dashed var(--border); border-radius: var(--radius);
@@ -72,17 +83,36 @@
 
   .photo-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2; }
 
-  .edit-btn {
-    position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.6);
-    color: #fff; border: none; border-radius: 4px; padding: 2px 8px;
-    font-size: 11px; cursor: pointer; z-index: 3; display: none; font-family: inherit;
+  /* Slot Controls Row: Frame + Left/Right Reordering */
+  .slot-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-bottom: 6px;
+    z-index: 4;
   }
-  .photo-area:hover .edit-btn { display: block; }
 
-  .move-btns { display: flex; gap: 4px; margin-bottom: 6px; z-index: 4; }
+  .action-frame-btn {
+    flex: 1;
+    background: #1c1c1e;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s ease;
+  }
+  .action-frame-btn:active { opacity: 0.7; }
+
   .move-btn {
     background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
-    padding: 2px 8px; font-size: 12px; cursor: pointer; color: var(--text-secondary); font-family: inherit;
+    padding: 3px 8px; font-size: 12px; cursor: pointer; color: var(--text-secondary); font-family: inherit;
+    line-height: 1;
   }
   .move-btn:hover { background: var(--surface-hover); color: var(--text); }
   .move-btn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -90,11 +120,10 @@
   .remove-btn {
     position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
     border-radius: 50%; background: var(--danger); color: #fff; border: none;
-    font-size: 14px; line-height: 1; cursor: pointer; display: none;
+    font-size: 14px; line-height: 1; cursor: pointer; display: flex;
     align-items: center; justify-content: center; z-index: 5;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
-  .upload-slot.has-image:hover .remove-btn { display: flex; }
 
   .caption-input {
     width: 100%; border: 1px solid var(--border); border-radius: 6px;
@@ -193,26 +222,25 @@
   .footer-hint { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
 
   /* ===== FILTERS ===== */
-  .filter-options { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
   .filter-btn {
-    flex: 1; min-width: 70px; padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--border);
+    padding: 8px 10px; border-radius: 6px; border: 1.5px solid var(--border);
     background: var(--surface); font-size: 12px; font-weight: 500; cursor: pointer;
-    transition: all 0.15s ease; color: var(--text-secondary);
+    transition: all 0.15s ease; color: var(--text-secondary); text-align: center;
   }
   .filter-btn:hover { border-color: var(--text); color: var(--text); }
   .filter-btn.active { border-color: var(--text); background: var(--text); color: #fff; }
 
-  .effect-toggles { display: flex; gap: 8px; flex-wrap: wrap; }
+  .effect-toggles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .effect-toggle {
-    flex: 1; min-width: 90px; padding: 8px 12px; border-radius: 6px; border: 1.5px solid var(--border);
+    padding: 8px 10px; border-radius: 6px; border: 1.5px solid var(--border);
     background: var(--surface); font-size: 12px; font-weight: 500; cursor: pointer;
     transition: all 0.15s ease; color: var(--text-secondary);
-    display: flex; align-items: center; justify-content: center; gap: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
   }
   .effect-toggle:hover { border-color: var(--text); color: var(--text); }
   .effect-toggle.active { border-color: var(--accent); background: rgba(0,122,255,0.08); color: var(--accent); }
 
-  /* Grain: tiled fractal-noise SVG data-URI, blended over the photo */
   .fx-grain {
     position: absolute; inset: 0; pointer-events: none;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
@@ -222,7 +250,6 @@
     print-color-adjust: exact; -webkit-print-color-adjust: exact;
   }
 
-  /* Light leak: warm gradient bleeding in from a corner, screen-blended */
   .fx-lightleak {
     position: absolute; inset: 0; pointer-events: none;
     background:
@@ -246,7 +273,7 @@
 
   .modal {
     background: var(--surface); border-radius: 16px; padding: 24px;
-    width: 100%; max-width: 640px;
+    width: 100%; max-width: 860px; /* Widened to comfortably fit both columns */
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     position: relative;
     margin: auto;
@@ -257,18 +284,36 @@
     border-radius: 50%; background: var(--surface-hover); border: none;
     font-size: 18px; color: var(--text); cursor: pointer; display: flex;
     align-items: center; justify-content: center;
+    z-index: 10;
   }
   .modal-close-btn:hover { background: var(--border); }
 
   .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
 
-  .modal-section { margin-bottom: 24px; }
-  .modal-section-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 12px; }
+  /* 2-Column Responsive Body */
+  .modal-body {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 24px;
+    align-items: start;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 760px) {
+    .modal-body {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+
+  .modal-section { margin-bottom: 16px; }
+  .modal-section:last-child { margin-bottom: 0; }
+  .modal-section-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.4px; }
 
   .crop-preview {
     width: 100%; aspect-ratio: 3 / 4; background: #f2f2f7;
     border-radius: 8px; overflow: hidden; position: relative;
-    border: 1px solid var(--border); margin-bottom: 12px;
+    border: 1px solid var(--border);
   }
 
   .modal-image-layer {
@@ -289,7 +334,7 @@
 
   .slider-group {
     display: flex; align-items: center; gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .slider-group label { font-size: 12px; min-width: 50px; color: var(--text-secondary); }
   .slider-group input[type="range"] { flex: 1; }
@@ -407,56 +452,61 @@
       <button class="modal-close-btn" onclick="closeModal()">×</button>
       <div class="modal-title">Frame Photo</div>
 
-      <div class="modal-section">
-        <div class="crop-preview">
-          <div class="modal-image-layer" id="modalImageLayer">
-            <img id="cropImg" src="" alt="">
+      <!-- Split Layout Container -->
+      <div class="modal-body">
+        
+        <!-- Left Column: Image Canvas Preview -->
+        <div class="modal-left">
+          <div class="crop-preview">
+            <div class="modal-image-layer" id="modalImageLayer">
+              <img id="cropImg" src="" alt="">
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="modal-section">
-        <div class="modal-section-title">Style</div>
-        <div class="filter-options" id="filterOptions">
-          <button class="filter-btn active" data-filter="none">Normal</button>
-          <button class="filter-btn" data-filter="vintage">Vintage</button>
-          <button class="filter-btn" data-filter="fade">Faded</button>
-          <button class="filter-btn" data-filter="mono">B&amp;W</button>
-          <button class="filter-btn" data-filter="warm">Warm</button>
-          <button class="filter-btn" data-filter="huji">Huji</button>
-        </div>
-      </div>
+        <!-- Right Column: All Editing Controls -->
+        <div class="modal-right">
+          <div class="modal-section">
+            <div class="modal-section-title">Style</div>
+            <div class="filter-options" id="filterOptions">
+              <button class="filter-btn active" data-filter="none">Normal</button>
+              <button class="filter-btn" data-filter="vintage">Vintage</button>
+              <button class="filter-btn" data-filter="fade">Faded</button>
+              <button class="filter-btn" data-filter="mono">B&amp;W</button>
+              <button class="filter-btn" data-filter="warm">Warm</button>
+              <button class="filter-btn" data-filter="huji">Huji</button>
+            </div>
+          </div>
 
-      <div class="modal-section">
-        <div class="modal-section-title">Effects</div>
-        <div class="effect-toggles" id="effectToggles">
-          <button class="effect-toggle" data-effect="grain">🎞️ Grain</button>
-          <button class="effect-toggle" data-effect="lightLeak">✨ Light Leak</button>
-          <button class="effect-toggle" data-effect="aberration">🌈 Aberration</button>
-        </div>
-      </div>
+          <div class="modal-section">
+            <div class="modal-section-title">Effects</div>
+            <div class="effect-toggles" id="effectToggles">
+              <button class="effect-toggle" data-effect="grain">🎞️ Grain</button>
+              <button class="effect-toggle" data-effect="lightLeak">✨ Leak</button>
+              <button class="effect-toggle" data-effect="aberration">🌈 RGB</button>
+            </div>
+          </div>
 
-      <div class="modal-section">
-        <div class="modal-section-title">Zoom</div>
-        <div class="slider-group">
-          <input type="range" id="zoomSlider" min="0.3" max="3" step="0.05" value="1">
-          <span class="value" id="zoomVal">1.00×</span>
-        </div>
-      </div>
+          <div class="modal-section">
+            <div class="modal-section-title">Framing</div>
+            <div class="slider-group">
+              <label>Zoom</label>
+              <input type="range" id="zoomSlider" min="0.3" max="3" step="0.05" value="1">
+              <span class="value" id="zoomVal">1.00×</span>
+            </div>
 
-      <div class="modal-section">
-        <div class="modal-section-title">Pan Horizontal</div>
-        <div class="slider-group">
-          <input type="range" id="panXSlider" min="-100" max="100" step="1" value="0">
-          <span class="value" id="panXVal">0</span>
-        </div>
-      </div>
+            <div class="slider-group">
+              <label>Pan X</label>
+              <input type="range" id="panXSlider" min="-100" max="100" step="1" value="0">
+              <span class="value" id="panXVal">0</span>
+            </div>
 
-      <div class="modal-section">
-        <div class="modal-section-title">Pan Vertical</div>
-        <div class="slider-group">
-          <input type="range" id="panYSlider" min="-100" max="100" step="1" value="0">
-          <span class="value" id="panYVal">0</span>
+            <div class="slider-group">
+              <label>Pan Y</label>
+              <input type="range" id="panYSlider" min="-100" max="100" step="1" value="0">
+              <span class="value" id="panYVal">0</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -493,9 +543,6 @@
     return parts.join(' ');
   }
 
-  // Adds grain/light-leak overlay divs into a photo container (must be
-  // position:relative) based on an effects object. Call after the <img> is
-  // already appended so overlays paint on top.
   function applyEffectOverlays(container, effects) {
     container.querySelectorAll('.fx-grain, .fx-lightleak').forEach(el => el.remove());
     if (effects && effects.grain) {
@@ -566,42 +613,20 @@
       slotNum.textContent = 'Photo ' + (i + 1);
       slot.appendChild(slotNum);
 
-      const moveBtns = document.createElement('div');
-      moveBtns.className = 'move-btns';
-
-      const leftBtn = document.createElement('button');
-      leftBtn.className = 'move-btn';
-      leftBtn.textContent = '◀';
-      leftBtn.disabled = i === 0;
-      leftBtn.onclick = (e) => { e.stopPropagation(); swapSlots(i, i - 1); };
-      moveBtns.appendChild(leftBtn);
-
-      const rightBtn = document.createElement('button');
-      rightBtn.className = 'move-btn';
-      rightBtn.textContent = '▶';
-      rightBtn.disabled = i === 7;
-      rightBtn.onclick = (e) => { e.stopPropagation(); swapSlots(i, i + 1); };
-      moveBtns.appendChild(rightBtn);
-
-      slot.appendChild(moveBtns);
-
       const photoArea = document.createElement('div');
       photoArea.className = 'photo-area';
       let thumbImg = null;
 
       if (slots[i].src) {
+        photoArea.style.cursor = 'pointer';
+        photoArea.onclick = () => openModal(i);
+
         thumbImg = document.createElement('img');
         thumbImg.src = slots[i].src;
         thumbImg.alt = 'Photo ' + (i + 1);
         thumbImg.style.filter = buildImgFilterCSS(slots[i].filterPreset, slots[i].effects && slots[i].effects.aberration);
         photoArea.appendChild(thumbImg);
         applyEffectOverlays(photoArea, slots[i].effects);
-
-        const editBtn = document.createElement('button');
-        editBtn.className = 'edit-btn';
-        editBtn.textContent = 'Frame';
-        editBtn.onclick = (e) => { e.stopPropagation(); openModal(i); };
-        photoArea.appendChild(editBtn);
 
         const remove = document.createElement('button');
         remove.className = 'remove-btn';
@@ -614,19 +639,48 @@
         plus.className = 'plus';
         plus.textContent = '+';
         photoArea.appendChild(plus);
-      }
 
-      const fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.accept = 'image/*';
-      fileInput.onchange = (e) => handleFile(e, i);
-      photoArea.appendChild(fileInput);
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.onchange = (e) => handleFile(e, i);
+        photoArea.appendChild(fileInput);
+      }
 
       slot.appendChild(photoArea);
 
       if (thumbImg) {
         applyImageFrame(thumbImg, photoArea, slots[i].natW, slots[i].natH, slots[i].zoom, slots[i].panX, slots[i].panY, false);
       }
+
+      // Action Row: Left Arrow, Frame Button, Right Arrow
+      const slotControls = document.createElement('div');
+      slotControls.className = 'slot-controls';
+
+      const leftBtn = document.createElement('button');
+      leftBtn.className = 'move-btn';
+      leftBtn.textContent = '◀';
+      leftBtn.disabled = i === 0;
+      leftBtn.onclick = (e) => { e.stopPropagation(); swapSlots(i, i - 1); };
+      slotControls.appendChild(leftBtn);
+
+      const frameBtn = document.createElement('button');
+      frameBtn.className = 'action-frame-btn';
+      frameBtn.textContent = 'Frame';
+      frameBtn.disabled = !slots[i].src;
+      frameBtn.style.opacity = slots[i].src ? '1' : '0.4';
+      frameBtn.style.cursor = slots[i].src ? 'pointer' : 'not-allowed';
+      frameBtn.onclick = (e) => { e.stopPropagation(); if (slots[i].src) openModal(i); };
+      slotControls.appendChild(frameBtn);
+
+      const rightBtn = document.createElement('button');
+      rightBtn.className = 'move-btn';
+      rightBtn.textContent = '▶';
+      rightBtn.disabled = i === 7;
+      rightBtn.onclick = (e) => { e.stopPropagation(); swapSlots(i, i + 1); };
+      slotControls.appendChild(rightBtn);
+
+      slot.appendChild(slotControls);
 
       const cap = document.createElement('textarea');
       cap.className = 'caption-input';
@@ -846,6 +900,7 @@
   panXSlider.addEventListener('input', updateCropPreview);
   panYSlider.addEventListener('input', updateCropPreview);
 
+  // Mouse drag pan
   modalImageLayer.addEventListener('mousedown', (e) => {
     isDragging = true;
     dragStart = { x: e.clientX, y: e.clientY };
@@ -881,11 +936,43 @@
     }
   });
 
+  // Touch drag pan for mobile
+  modalImageLayer.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      dragOffset = { x: parseFloat(panXSlider.value), y: parseFloat(panYSlider.value) };
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const s = slots[editingIndex];
+    if (!s || !s.natW || !s.natH) return;
+
+    const boxW = modalImageLayer.clientWidth;
+    const boxH = modalImageLayer.clientHeight;
+    const zoom = parseFloat(zoomSlider.value);
+    const { maxOffX, maxOffY } = getMaxOffsets(s.natW, s.natH, boxW, boxH, zoom);
+
+    const dxPx = e.touches[0].clientX - dragStart.x;
+    const dyPx = e.touches[0].clientY - dragStart.y;
+
+    const dxPct = maxOffX > 0 ? (dxPx / maxOffX) * 100 : 0;
+    const dyPct = maxOffY > 0 ? (dyPx / maxOffY) * 100 : 0;
+
+    panXSlider.value = Math.max(-100, Math.min(100, dragOffset.x + dxPct));
+    panYSlider.value = Math.max(-100, Math.min(100, dragOffset.y + dyPct));
+    updateCropPreview();
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    isDragging = false;
+  });
+
   modal.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
   });
-
-  window.addEventListener('beforeprint', renderSheet);
 
   renderUploadGrid();
   renderSheet();

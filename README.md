@@ -1,6 +1,10 @@
 # Re-Mind 🎞️✨
 ### 🖼️ Frame it, 🎴 Print it, ✨ Re-Mind yourself.
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Open_App-brightgreen?style=for-the-badge&logo=githubpages&logoColor=white)](https://sairamakrishna-k7.github.io/Re-Mind/)
+
+🔗 **Try it live in your browser:** [https://sairamakrishna-k7.github.io/Re-Mind/](https://sairamakrishna-k7.github.io/Re-Mind/)
+
 ### A DIY Instant Photo Studio, customizable 3d printed magnetic frames & Precision Cutting Jig
 
 > *"Keep your memories tangible, not behind expensive paywalls."*
